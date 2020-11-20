@@ -2,7 +2,20 @@ import itertools
 import random
 from collections import Counter
 from functools import lru_cache
-import numba
+
+"""Mastermind
+
+Tools for playing the game Mastermind - https://en.wikipedia.org/wiki/Mastermind_(board_game)
+
+Including minimax solver
+
+Classes:
+    Game - keeps track of mastermind game's state
+    Solver - minimax filter to find best guesses for game
+
+Functions:
+    solve_game - finds guess strategy from starting position (useful for performance measurement)
+"""
 
 
 COLOURS = {
@@ -17,8 +30,6 @@ COLOURS = {
 }
 
 
-@lru_cache(maxsize=int(1e9))
-@numba.njit
 def find_guess_results(hidden_position, guess):
     """
     Finds results from guess, given hidden postion
@@ -31,43 +42,12 @@ def find_guess_results(hidden_position, guess):
         (red (int): exact matches, right colour and position,
         white (int): correct colour, but in wrong position)
     """
-    exact_matches = 0
-
-    for i in range(5):
-        if guess[i] == hidden_position[i]:
-            exact_matches += 1
-
-    value_matches = 0
-    for n in range(8):
-        guess_c = 0
-        hp_c = 0
-        for i in range(5):
-            if guess[i] == n:
-                guess_c += 1
-            if hidden_position[i] == n:
-                hp_c += 1
-        value_matches += min(guess_c, hp_c)
-
-    wrong_position = value_matches - exact_matches
-    return exact_matches, wrong_position
-
-
-def find_guess_results(hidden_position, guess):
-    """
-    Finds results from guess, given hidden postion
-
-    Args:
-        hidden_position (tuple): values hidden from guessing player
-        guess (tuple): values guessed by guessing player
-
-    Returns:
-        (red (int): exact matches, right colour and position,
-        white (int): correct colour, but in wrong position)
-    """
-    exact_matches = sum([c == g for (c, g) in zip(hidden_position, guess)])
-    c1 = Counter(hidden_position)
-    c2 = Counter(guess)
-    value_matches = sum(min(c1[k], c2.get(k, 0)) for k in c1.keys())
+    exact_matches = sum((c == g for (c, g) in zip(hidden_position, guess)))
+    counter_hidden = Counter(hidden_position)
+    counter_guess = Counter(guess)
+    value_matches = sum(
+        min(counter_hidden[k], counter_guess.get(k, 0)) for k in counter_hidden.keys()
+    )
     wrong_position = value_matches - exact_matches
     return exact_matches, wrong_position
 
@@ -97,11 +77,11 @@ class Game:
             (a) number of correct colours in right position
             (b) number of correct colours in the wrong position
 
-        Args:  
+        Args:
             guess (tuple): colours guessed for positions 1-5
 
         Returns:
-            (exact_matches, wrong_position): tuple, number of correct colours in right and wrong position 
+            (exact_matches, wrong_position): tuple, number of correct colours in right and wrong position
         """
         guess_result = find_guess_results(tuple(self.hidden_choices), tuple(guess))
         self.prev_guesses.append(guess)
@@ -138,7 +118,7 @@ class Solver:
         """
         Removes hidden choices not possible based on the latest guess
 
-        Args:  
+        Args:
             starting_results (list): results possible before guess
             guess (tuple): latest guess
             guess_outcome (tuple): results of this guess
@@ -155,7 +135,7 @@ class Solver:
         Finds the strategy that leads to largest reduction in possible hidden choices, in the worst case scenario
 
         (1) Loop through all possible guesses
-            (2) Loop through all responses you could recieve from these guesses
+        (2) Loop through all responses you could recieve from these guesses
 
         Find the largest worst-case improvement
 
