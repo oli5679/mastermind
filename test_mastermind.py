@@ -2,7 +2,11 @@ import pytest
 import mastermind
 import random
 
-game = mastermind.Game([1, 2, 3, 4])
+game = mastermind.Game([1, 2, 3, 4], 6, 4)
+
+FIXTURE_SPECIFIC = [(0, 1, 3, 2), (0, 1, 5, 4), (0, 0, 0, 0)]
+
+FIXTURE_RANDOM = [tuple(random.sample(range(5), 3)) for _ in range(5)]
 
 
 def test_guess_all_right():
@@ -26,40 +30,14 @@ def test_guess_all_right_wrong_order():
     assert guess_red == 0 and guess_white == 4
 
 
-"""
-def test_solve_game_specific():
-    HIDDEN_POSITION = (0, 1, 3, 2, 1)
-    res = mastermind.solve_game(HIDDEN_POSITION)
-
-    assert res[0] == tuple(HIDDEN_POSITION) and res[1] < 7
-
+@pytest.mark.parametrize("hidden_position", FIXTURE_SPECIFIC)
+def test_solve_game_specific(hidden_position):
+    print(hidden_position)
+    res, count_val = mastermind.solve_game(hidden_position, 6, 4)
+    assert res == tuple(hidden_position) and count_val < 7
 
 
-def test_solve_game_specific_2():
-    HIDDEN_POSITION = (0, 1, 5, 4,6)
-    res = mastermind.solve_game(HIDDEN_POSITION)
-
-    assert res[0] == tuple(HIDDEN_POSITION) and res[1] < 7
-
-
-def test_solve_game_specific_3():
-    HIDDEN_POSITION = (0,0,0,0,0)
-    res = mastermind.solve_game(HIDDEN_POSITION)
-
-    assert res[0] == tuple(HIDDEN_POSITION) and res[1] < 7
-
-def test_solve_game_specific_random_1():
-    HIDDEN_POSITION = random.sample(range(0, 8), 5)
-    res = mastermind.solve_game(HIDDEN_POSITION)
-    assert res[0] == tuple(HIDDEN_POSITION) and res[1] < 7
-
-def test_solve_game_specific_random_2():
-    HIDDEN_POSITION = random.sample(range(0, 8), 5)
-    res = mastermind.solve_game(HIDDEN_POSITION)
-    assert res[0] == tuple(HIDDEN_POSITION) and res[1] < 7
-
-def test_solve_game_specific_random_3():
-    HIDDEN_POSITION = random.sample(range(0, 8), 5)
-    res = mastermind.solve_game(HIDDEN_POSITION)
-    assert res[0] == tuple(HIDDEN_POSITION) and res[1] < 7
-"""
+@pytest.mark.parametrize("hidden_position", FIXTURE_RANDOM)
+def test_solve_game_random(hidden_position):
+    res, count_val = mastermind.solve_game(hidden_position, 5, 3)
+    assert res == tuple(hidden_position) and count_val < 7
