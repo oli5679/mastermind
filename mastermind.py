@@ -2,6 +2,11 @@ import itertools
 import random
 from collections import Counter
 from functools import lru_cache
+import logging
+import datetime
+from tqdm import tqdm
+
+logging.basicConfig(level=logging.INFO)
 
 """Mastermind
 
@@ -24,9 +29,9 @@ COLOURS = {
     3: "pink",
     4: "white",
     5: "yellow",
-    6: "green",
-    7: "grey",
 }
+
+NUM_COLOURS, NUM_CELLS = 6, 4  # also requires tweak to itertools.product
 
 
 def find_guess_results(hidden_position, guess):
@@ -47,13 +52,11 @@ class Game:
     """
     Mastermind Game -  https://en.wikipedia.org/wiki/Mastermind_(board_game)
     One player chooses hidden values, the other guesses, and is told information on accuracy of their guess.
-    NOTE - for now hardcoded, size 4, with 8 possible values
     """
 
     def __init__(self, hidden_choices):
         self.hidden_choices = tuple(hidden_choices)
         self.prev_guesses = []
-        self.prev_guess_results = []
 
     def guess(self, guess):
         """
@@ -62,8 +65,7 @@ class Game:
             (b) number of correct colours in the wrong position
         """
         guess_result = find_guess_results(tuple(self.hidden_choices), tuple(guess))
-        self.prev_guesses.append(guess)
-        self.prev_guess_results.append(guess_result)
+        self.prev_guesses.append((guess, guess_result))
         return guess_result
 
 
@@ -75,7 +77,12 @@ class Solver:
     def __init__(self, guess, guess_outcome, starting_possible=None):
         if starting_possible is None:
             starting_possible = list(
-                itertools.product(range(8), range(8), range(8), range(8))
+                itertools.product(
+                    range(NUM_COLOURS),
+                    range(NUM_COLOURS),
+                    range(NUM_COLOURS),
+                    range(NUM_COLOURS),
+                )
             )
             random.shuffle(starting_possible)
         self.possible_choices = self._filter_possible_choices(
@@ -132,25 +139,33 @@ def solve_game(hidden_position):
     """
     g = Game(hidden_position)
     guess_count, remain_possible, start_possible = 0, 1e10, None
-    guess = tuple(random.sample(range(0, 8), 4))
-    print("hidden position")
-    print([COLOURS[g] for g in hidden_position])
+    guess = tuple(random.sample(range(0, NUM_COLOURS), NUM_CELLS))
+    logging.debug("hidden position")
+    logging.debug([COLOURS[g] for g in hidden_position])
     while remain_possible > 1:
         guess_count += 1
         res = g.guess(guess)
         guess, remain_possible, start_possible = Solver(
             guess=guess, guess_outcome=res, starting_possible=start_possible
         )()
-        print(
+        logging.debug(
             f"""guess {guess_count} \n
             {[COLOURS[g] for g in guess]}
             results {res[0]} red {res[1]} white
               remaining 
               possible {len(start_possible)}"""
         )
-    print(f"Solution {[COLOURS[c] for c in start_possible[0]]}")
+    logging.debug(f"Solution {[COLOURS[c] for c in start_possible[0]]}")
     return start_possible[0], guess_count
 
 
 if __name__ == "__main__":
-    solve_game([0, 0, 3, 4])
+    start = datetime.datetime.now()
+    solve_guesses = 0
+    for _ in tqdm(range(1000)):
+        pos = tuple(random.sample(range(0, NUM_COLOURS), NUM_CELLS))
+        _, c = solve_game(pos)
+        solve_guesses += c
+    print(f"guesses {solve_guesses/ 1000}")
+    end = datetime.datetime.now()
+    print(f"time {(end-start).total_seconds()}")
