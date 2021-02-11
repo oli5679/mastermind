@@ -16,7 +16,7 @@ Python 3+, see here one way to install https://docs.anaconda.com/anaconda/instal
 
     pytest .
 
-## Examples
+## Example
 
     import mastermind
     
